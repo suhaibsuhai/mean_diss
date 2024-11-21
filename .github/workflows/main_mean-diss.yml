@@ -22,29 +22,21 @@ jobs:
         run: |
           cd frontend
           npm install
-          npm run build --if-present  # This will build the Angular frontend (output to dist)
+          npm run build --if-present  # Build Angular frontend
 
       - name: Install backend dependencies and build
         run: |
           cd backend
           npm install
-          npm run build --if-present
+          npm run build --if-present  # Build Node.js backend
 
-      # Debugging: Check contents of the frontend dist directory
-      - name: List frontend build contents
-        run: dir frontend/dist  # Ensure that the dist directory contains the build output
-
-      - name: List backend contents
-        run: dir backend  # Ensure backend contains the necessary files for deployment
-
-      # Upload frontend build artifact
+      # Upload frontend and backend build artifacts
       - name: Upload frontend build artifact
         uses: actions/upload-artifact@v4
         with:
           name: frontend-app
-          path: frontend/dist  # Use the default Angular build output path
+          path: frontend/dist
 
-      # Upload backend build artifact
       - name: Upload backend build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -58,18 +50,18 @@ jobs:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      id-token: write  # This is required for requesting the JWT
+      id-token: write  # Required for JWT requests
 
     steps:
       - name: Download frontend build artifact
         uses: actions/download-artifact@v4
         with:
-          name: frontend-app  # Ensure this matches the upload artifact name
+          name: frontend-app
 
       - name: Download backend build artifact
         uses: actions/download-artifact@v4
         with:
-          name: backend-app  # Ensure this matches the upload artifact name
+          name: backend-app
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -78,18 +70,25 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_9894EB83F8004550B039AA98CF6669F7 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_27B48037EAA041A48AFB332C4EC50439 }}
 
-      - name: 'Deploy Backend to Azure Web App'
+      - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
-        id: deploy-backend
         with:
-          app-name: 'mean-diss-backend'  # Ensure the app name is correct
+          app-name: 'mean-diss'  # The name of your single Azure Web App
+          resource-group: 'your-resource-group'  # Specify your resource group if needed
           slot-name: 'Production'
-          package: './backend'
+          package: './backend'  # Deploy backend first
 
-      - name: 'Deploy Frontend to Azure Web App'
-        uses: azure/webapps-deploy@v3
-        id: deploy-frontend
-        with:
-          app-name: 'mean-diss-frontend'  # Ensure the app name is correct
-          slot-name: 'Production'
-          package: './frontend/dist'  # Deploy the Angular build output (dist folder)
+      - name: 'Deploy Frontend to Azure Web App (into wwwroot)'
+        run: |
+          # Copy the Angular build into the wwwroot folder of the app
+          az webapp deploy --name mean-diss --resource-group your-resource-group --src-path frontend/dist --target-path /home/site/wwwroot
+        env:
+          AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
+          AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+
+      - name: Set MongoDB URI as environment variable
+        run: |
+          az webapp config appsettings set \
+            --name mean-diss \
+            --resource-group your-resource-group \
+            --settings MONGO_URI=${{ secrets.MONGO_URI }}  # Set MongoDB URI for the app
