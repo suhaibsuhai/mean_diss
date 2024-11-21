@@ -22,7 +22,7 @@ jobs:
         run: |
           cd frontend
           npm install
-          npm run build --if-present
+          npm run build --if-present  # This will build the Angular frontend (output to dist)
 
       - name: Install backend dependencies and build
         run: |
@@ -30,19 +30,19 @@ jobs:
           npm install
           npm run build --if-present
 
-      # Debugging: Check contents of the frontend and backend directories
+      # Debugging: Check contents of the frontend dist directory
       - name: List frontend build contents
-        run: dir frontend/build  # Check if the build directory exists
+        run: dir frontend/dist  # Ensure that the dist directory contains the build output
 
       - name: List backend contents
-        run: dir backend  # Check if backend folder contains necessary files
+        run: dir backend  # Ensure backend contains the necessary files for deployment
 
       # Upload frontend build artifact
       - name: Upload frontend build artifact
         uses: actions/upload-artifact@v4
         with:
           name: frontend-app
-          path: frontend/build
+          path: frontend/dist  # Use the default Angular build output path
 
       # Upload backend build artifact
       - name: Upload backend build artifact
@@ -82,7 +82,7 @@ jobs:
         uses: azure/webapps-deploy@v3
         id: deploy-backend
         with:
-          app-name: 'mean-diss-backend'  # Make sure the app name is correct
+          app-name: 'mean-diss-backend'  # Ensure the app name is correct
           slot-name: 'Production'
           package: './backend'
 
@@ -90,6 +90,6 @@ jobs:
         uses: azure/webapps-deploy@v3
         id: deploy-frontend
         with:
-          app-name: 'mean-diss-frontend'  # Make sure the app name is correct
+          app-name: 'mean-diss-frontend'  # Ensure the app name is correct
           slot-name: 'Production'
-          package: './frontend/build'
+          package: './frontend/dist'  # Deploy the Angular build output (dist folder)
