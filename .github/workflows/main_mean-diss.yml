@@ -70,18 +70,18 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_9894EB83F8004550B039AA98CF6669F7 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_27B48037EAA041A48AFB332C4EC50439 }}
 
-      - name: 'Deploy to Azure Web App'
+      - name: 'Deploy Backend to Azure Web App'
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'mean-diss'  # The name of your single Azure Web App
-          resource-group: 'your-resource-group'  # Specify your resource group if needed
+          app-name: 'mean-diss'  # The name of your Azure Web App
+          resource-group-name: 'azure-mean'  # Your resource group name
           slot-name: 'Production'
-          package: './backend'  # Deploy backend first
+          package: './backend'  # Ensure the backend directory contains the right files
 
       - name: 'Deploy Frontend to Azure Web App (into wwwroot)'
         run: |
           # Copy the Angular build into the wwwroot folder of the app
-          az webapp deploy --name mean-diss --resource-group your-resource-group --src-path frontend/dist --target-path /home/site/wwwroot
+          az webapp deploy --name mean-diss --resource-group azure-mean --src-path frontend/dist --target-path /home/site/wwwroot
         env:
           AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
           AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
@@ -90,5 +90,5 @@ jobs:
         run: |
           az webapp config appsettings set \
             --name mean-diss \
-            --resource-group your-resource-group \
+            --resource-group azure-mean \
             --settings MONGO_URI=${{ secrets.MONGO_URI }}  # Set MongoDB URI for the app
