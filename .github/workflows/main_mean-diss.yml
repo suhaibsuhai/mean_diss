@@ -1,7 +1,4 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
-name: Build and deploy Node.js app to Azure Web App - mean-diss
+name: Build and deploy MEAN stack app to Azure Web App - mean-diss
 
 on:
   push:
@@ -16,22 +13,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Set up Node.js version
       - name: Set up Node.js version
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
 
-      - name: npm install, build, and test
+      # Install dependencies and build frontend
+      - name: Install frontend dependencies
         run: |
+          cd frontend
           npm install
           npm run build --if-present
-          npm run test --if-present
-      
-      - name: Upload artifact for deployment job
+
+      # Install dependencies and build backend
+      - name: Install backend dependencies
+        run: |
+          cd ../backend
+          npm install
+          npm run build --if-present
+
+      # Upload both frontend and backend build artifacts
+      - name: Upload frontend build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: node-app
-          path: .
+          name: frontend-app
+          path: frontend/build  # Adjust if needed
+
+      - name: Upload backend build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-app
+          path: backend  # Adjust if needed
 
   deploy:
     runs-on: ubuntu-latest
@@ -40,14 +53,21 @@ jobs:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      id-token: write #This is required for requesting the JWT
+      id-token: write  # This is required for requesting the JWT
 
     steps:
-      - name: Download artifact from build job
+      # Download frontend and backend artifacts from the build job
+      - name: Download frontend build artifact
         uses: actions/download-artifact@v4
         with:
-          name: node-app
-      
+          name: frontend-app
+
+      - name: Download backend build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-app
+
+      # Login to Azure
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -55,11 +75,20 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_9894EB83F8004550B039AA98CF6669F7 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_27B48037EAA041A48AFB332C4EC50439 }}
 
-      - name: 'Deploy to Azure Web App'
+      # Deploy backend to Azure Web App
+      - name: 'Deploy Backend to Azure Web App'
         uses: azure/webapps-deploy@v3
-        id: deploy-to-webapp
+        id: deploy-backend
         with:
-          app-name: 'mean-diss'
+          app-name: 'mean-diss-backend'  # Ensure this is the correct backend app name
           slot-name: 'Production'
-          package: .
-          
+          package: './backend'  # Path to the backend artifact
+
+      # Deploy frontend to Azure Web App (if it's served as a static website)
+      - name: 'Deploy Frontend to Azure Web App'
+        uses: azure/webapps-deploy@v3
+        id: deploy-frontend
+        with:
+          app-name: 'mean-diss-frontend'  # Ensure this is the correct frontend app name
+          slot-name: 'Production'
+          package: './frontend/build'  # Path to the frontend build artifact
