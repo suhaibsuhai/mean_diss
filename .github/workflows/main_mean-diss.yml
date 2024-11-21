@@ -77,7 +77,7 @@ jobs:
           app-name: 'mean-diss'  # The name of your Azure Web App
           resource-group-name: 'azure-mean'  # Your resource group name
           slot-name: 'Production'
-          package: './backend'  # Ensure the backend directory contains the right files
+          package: .
 
       - name: 'Deploy Frontend to Azure Web App (into wwwroot)'
         run: |
