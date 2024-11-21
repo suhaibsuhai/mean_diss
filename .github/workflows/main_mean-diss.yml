@@ -82,7 +82,7 @@ jobs:
       - name: 'Deploy Frontend to Azure Web App (into wwwroot)'
         run: |
           # Copy the Angular build into the wwwroot folder of the app
-          az webapp deploy --name mean-diss --resource-group azure-mean --src-path frontend/dist --target-path /home/site/wwwroot
+          az webapp deploy --name mean-diss --resource-group azure-mean --src-path . --target-path /home/site/wwwroot
         env:
           AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
           AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
