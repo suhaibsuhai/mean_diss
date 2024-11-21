@@ -13,38 +13,43 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Set up Node.js version
       - name: Set up Node.js version
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
 
-      # Install dependencies and build frontend
-      - name: Install frontend dependencies
+      - name: Install frontend dependencies and build
         run: |
           cd frontend
           npm install
           npm run build --if-present
 
-      # Install dependencies and build backend
-      - name: Install backend dependencies
+      - name: Install backend dependencies and build
         run: |
           cd backend
           npm install
           npm run build --if-present
 
-      # Upload both frontend and backend build artifacts
+      # Debugging: Check contents of the frontend and backend directories
+      - name: List frontend build contents
+        run: dir frontend/build  # Check if the build directory exists
+
+      - name: List backend contents
+        run: dir backend  # Check if backend folder contains necessary files
+
+      # Upload frontend build artifact
       - name: Upload frontend build artifact
         uses: actions/upload-artifact@v4
         with:
           name: frontend-app
-          path: frontend/build  # Adjust if needed
+          path: frontend/build
 
+      # Upload backend build artifact
       - name: Upload backend build artifact
         uses: actions/upload-artifact@v4
         with:
           name: backend-app
-          path: backend  # Adjust if needed
+          path: backend
 
   deploy:
     runs-on: ubuntu-latest
@@ -56,18 +61,16 @@ jobs:
       id-token: write  # This is required for requesting the JWT
 
     steps:
-      # Download frontend and backend artifacts from the build job
       - name: Download frontend build artifact
         uses: actions/download-artifact@v4
         with:
-          name: frontend-app
+          name: frontend-app  # Ensure this matches the upload artifact name
 
       - name: Download backend build artifact
         uses: actions/download-artifact@v4
         with:
-          name: backend-app
+          name: backend-app  # Ensure this matches the upload artifact name
 
-      # Login to Azure
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -75,20 +78,18 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_9894EB83F8004550B039AA98CF6669F7 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_27B48037EAA041A48AFB332C4EC50439 }}
 
-      # Deploy backend to Azure Web App
       - name: 'Deploy Backend to Azure Web App'
         uses: azure/webapps-deploy@v3
         id: deploy-backend
         with:
-          app-name: 'mean-diss-backend'  # Ensure this is the correct backend app name
+          app-name: 'mean-diss-backend'  # Make sure the app name is correct
           slot-name: 'Production'
-          package: './backend'  # Path to the backend artifact
+          package: './backend'
 
-      # Deploy frontend to Azure Web App (if it's served as a static website)
       - name: 'Deploy Frontend to Azure Web App'
         uses: azure/webapps-deploy@v3
         id: deploy-frontend
         with:
-          app-name: 'mean-diss-frontend'  # Ensure this is the correct frontend app name
+          app-name: 'mean-diss-frontend'  # Make sure the app name is correct
           slot-name: 'Production'
-          package: './frontend/build'  # Path to the frontend build artifact
+          package: './frontend/build'
